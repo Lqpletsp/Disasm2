@@ -1,4 +1,5 @@
-
+// NOTE: FOR ANY WEIRD OR UNECESSARY INDENTATIONS, ASTONVIM IS TO BE BLAMED :) 
+// This is currently just a tokenizer
 #include <iostream>
 #include <string>
 #include <vector>
