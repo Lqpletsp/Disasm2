@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-const std::vector<std::string> Commands = {"out", "in", "decm"};
+const std::vector<std::string> Commands = {"out", "in", "decm", "decv"};
 
 struct token {
   std::string Type;
@@ -30,6 +30,9 @@ void printStuff(const TokenGrid_t &lines) { // debug function
   }
 }
 
+void CheckSyntax(const TokenGrid_t &labeledtoken);
+void DeclareIdentifiers();
+void ExecuteCode();
 TokenGrid_t CreateLabeledTokenTable(const TokenGrid &TokenizedLines);
 TokenGrid Tokenizer(const std::string &codelines);
 bool FindCMD(const std::string &token);
@@ -50,12 +53,33 @@ bool SearchCh(const T &ToSearch,
 
 int main() {
   std::string Code = R"(
-    decm 200; 
-    )";
+  out -;  
+  )";
 
   TokenGrid tokens = Tokenizer(Code);
-  printStuff(CreateLabeledTokenTable(tokens));
+  TokenGrid_t labeledtoken = CreateLabeledTokenTable(tokens);
+  printStuff(labeledtoken);
+  CheckSyntax(labeledtoken);
   return 0;
+}
+void CheckSyntax(const TokenGrid_t &labeledtoken) {
+  for (int LineIndex = 0; LineIndex < labeledtoken.size(); LineIndex++) {
+    Line_t Line = labeledtoken.at(LineIndex);
+    if (Line.at(0).Type != "cmd") {
+      std::cout
+          << "ERR[" << "ln:" << LineIndex << "|col:" << "0" // Just a debug line. Will be changed
+          << "] : Beginning of each line must be a valid command. None found";
+      return;
+    }
+    for (int TokenIndex = 1; TokenIndex < Line.size(); TokenIndex++) {
+      token CurrentToken = Line.at(TokenIndex);
+      if (CurrentToken.Type == "???") {
+        std::cout << "ERR[" << "ln:" << LineIndex << "|col:" << TokenIndex // Just a debug line. Will be changed
+                  << "] : Invalid token given. Cannot intepret '"
+                  << CurrentToken.TokenName << "'";
+      }
+    }
+  }
 }
 
 TokenGrid Tokenizer(const std::string &codelines) {
@@ -93,9 +117,11 @@ TokenGrid Tokenizer(const std::string &codelines) {
       currentToken.clear();
       currentLine.clear();
     } else if (ch == ' ' || ch == ',' || ch == '\t' || ch == '\n' ||
-               ch == '\r') {
+               ch == '\r' || ch == '*' || ch == '@') {
       if (!currentToken.empty())
         currentLine.push_back(currentToken);
+      if (ch == '*' || ch == '@')
+        currentLine.push_back(std::string(1, ch));
       currentToken.clear();
     } else {
       currentToken += ch;
@@ -125,6 +151,10 @@ TokenGrid_t CreateLabeledTokenTable(const TokenGrid &TokenizedLines) {
             token_struct.Type = "str"; // string
           else if (ValidateName(line.at(TokenIndex)))
             token_struct.Type = "var"; // variable
+          else if (tokenStr == "*" || tokenStr == "@")
+            token_struct.Type = "opr"; // operator
+          else if (tokenStr.at(0) == '!')
+            token_struct.Type = "mmd"; // mid line command
           else
             token_struct.Type = "???"; // unknown
         }
