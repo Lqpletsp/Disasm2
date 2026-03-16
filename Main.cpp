@@ -1,5 +1,5 @@
 // NOTE: FOR ANY WEIRD OR UNECESSARY INDENTATIONS, ASTRONVIM IS TO BE BLAMED :) 
-// This is currently just a tokenizer
+
 #include <cstdlib>
 #include <iostream>
 #include <string>
