@@ -13,7 +13,7 @@ struct token {
 };
 
 using Line = std::vector<std::string>;
-using TokenGrid = std::vector<Line>; // type token
+using TokenGrid = std::vector<Line>; 
 using Line_t = std::vector<token>;   // vector to store token types
 using TokenGrid_t =
     std::vector<Line_t>; // vector to store vector to store token types
