@@ -1,5 +1,4 @@
-// NOTE: FOR ANY WEIRD OR UNECESSARY INDENTATIONS, ASTRONVIM IS TO BE BLAMED :) 
-
+// Any unnecessary indetentaions are caused by AstroNvim :) 
 #include <cstdlib>
 #include <iostream>
 #include <string>
@@ -30,13 +29,13 @@ void printStuff(const TokenGrid_t &lines) { // debug function
   }
 }
 double BridgeFncRtr(const Line_t &Tokens, const int &TokenIndex,
-                    const int &LineIndex, std::string &cmd);
+                    const int &LineIndex, const std::string &cmd);
 // void BridgeFncNone(const Line_t &Tokens, const int &RowIndex,
 // std::string &cmd); // does not return anything
 double AddF(const Line_t &Tokens, const int &LineIndex);
 double MinF(const Line_t &Tokens, const int &LineIndex);
 // double MultF(const Line_t &Tokens, const int &LineIndex);
-// double DivF(const Line_t &Tokens, const int &LineIndex);
+double DivF(const Line_t &Tokens, const int &LineIndex);
 void OutError(const Line_t &ErrLine, const int &RowLine, const int &ColLine,
               const std::string ErrMsg);
 void CheckSyntax(const TokenGrid_t &labeledtoken);
@@ -72,7 +71,7 @@ T SliceStuff(const int &Start, const int &End,
 
 int main() {
   std::string Code = R"(
-  out add 10 min 12,1; 
+  out add 10 div min 28,30 ~ 10; 
   )";
 
   TokenGrid tokens = Tokenizer(Code);
@@ -100,37 +99,102 @@ void ExecuteMainCode(const TokenGrid_t &labeledtoken) {
   }
 }
 double BridgeFncRtr(const Line_t &Tokens, const int &TokenIndex,
-                    const int &LineIndex, std::string &cmd) {
+                    const int &LineIndex, const std::string &cmd) {
   if (cmd == "min") {
     return MinF(Tokens, TokenIndex);
   } else if (cmd == "add") {
     return AddF(Tokens, TokenIndex);
+  } else if (cmd == "div") {
+    return DivF(Tokens, TokenIndex);
   } else {
     OutError(Tokens, LineIndex, TokenIndex,
-             "Cannot use void returning commands inside other commands");
+             "Cannot use void commands inside other commands");
     return 0;
   }
 }
-double MinF(const Line_t &Tokens, const int &LineIndex) {
-  double Subtracted = std::stoi(Tokens.at(0).TokenName);
+double DivF(const Line_t &Tokens, const int &LineIndex) {
+  double Divided;
   token CurrentToken;
   bool InsideCommand = false;
+  if (Tokens.at(0).Type == "cmd") {
+    Divided = BridgeFncRtr(SliceStuff(1, Tokens.size() - 1, Tokens), 0,
+                           LineIndex, Tokens.at(0).TokenName);
+    InsideCommand = true;
+  } else if (Tokens.at(0).Type == "dig")
+    Divided = std::stod(Tokens.at(0).TokenName);
+  else
+    OutError(Tokens, LineIndex, 0, "Cannot use string data type for dividing");
+
   for (int TokenIndex = 1; TokenIndex < Tokens.size(); TokenIndex++) {
     CurrentToken = Tokens.at(TokenIndex);
-    if (InsideCommand) {
+    if (InsideCommand && CurrentToken.Type == "cmd") {
       break;
-    } else if (CurrentToken.Type == "dig") {
-      Subtracted -= std::stoi(CurrentToken.TokenName);
-    } else if (CurrentToken.Type == "cmd") {
-      Subtracted -=
-          BridgeFncRtr(SliceStuff(TokenIndex + 1, Tokens.size() - 1, Tokens),
-                       TokenIndex, LineIndex, CurrentToken.TokenName);
-    } else {
-      OutError(
-          Tokens, LineIndex, TokenIndex,
-          "Cannot use string data type for subtraction"); // or var because
-                                                          // variables are not
-                                                          // supported right now
+    } else if (InsideCommand && CurrentToken.Type == "stp") {
+      InsideCommand = false;
+      continue;
+    }
+    if (!InsideCommand) {
+      if (CurrentToken.Type == "dig")
+        Divided /= std::stod(CurrentToken.TokenName);
+      else if (CurrentToken.Type == "cmd")
+        Divided /=
+            BridgeFncRtr(SliceStuff(TokenIndex + 1, Tokens.size() - 1, Tokens),
+                         TokenIndex, LineIndex, CurrentToken.TokenName);
+      else if (CurrentToken.Type == "stp")
+        break;
+      else
+        OutError(
+            Tokens, LineIndex, TokenIndex,
+            "Cannot use string data type for subtraction"); // or var but
+                                                            // variables are not
+                                                            // supported right
+                                                            // now
+    }
+  }
+  return Divided;
+}
+double MinF(const Line_t &Tokens, const int &LineIndex) {
+  token CurrentToken;
+  bool InsideCommand = false;
+  double Subtracted;
+  if (Tokens.at(0).Type == "cmd") {
+    Subtracted = BridgeFncRtr(SliceStuff(1, Tokens.size() - 1, Tokens), 0,
+                              LineIndex, Tokens.at(0).TokenName);
+    InsideCommand = true;
+  }
+
+  else if (Tokens.at(0).Type == "dig")
+    Subtracted = std::stod(Tokens.at(0).TokenName);
+  else
+    OutError(Tokens, LineIndex, 0,
+             "Cannot use string data type for subtraction");
+
+  for (int TokenIndex = 1; TokenIndex < Tokens.size(); TokenIndex++) {
+    CurrentToken = Tokens.at(TokenIndex);
+    if (InsideCommand && CurrentToken.Type == "cmd") {
+      break;
+    } else if (InsideCommand && CurrentToken.Type == "stp") {
+      InsideCommand = false;
+      continue;
+    }
+    if (!InsideCommand) {
+      if (CurrentToken.Type == "dig") {
+        Subtracted -= std::stod(CurrentToken.TokenName);
+      } else if (CurrentToken.Type == "cmd") {
+        InsideCommand = true;
+        Subtracted -=
+            BridgeFncRtr(SliceStuff(TokenIndex + 1, Tokens.size() - 1, Tokens),
+                         TokenIndex, LineIndex, CurrentToken.TokenName);
+      } else if (CurrentToken.Type == "stp") {
+        break;
+      } else if (CurrentToken.Type == "str") {
+        OutError(
+            Tokens, LineIndex, TokenIndex,
+            "Cannot use string data type for subtraction"); // or var but
+                                                            // variables are not
+                                                            // supported right
+                                                            // now
+      }
     }
   }
   return Subtracted;
@@ -142,22 +206,29 @@ double AddF(const Line_t &Tokens, const int &LineIndex) {
   bool InsideCommand = false;
   for (int TokenIndex = 0; TokenIndex < Tokens.size(); TokenIndex++) {
     CurrentToken = Tokens.at(TokenIndex);
-    if (InsideCommand) {
+    if (InsideCommand && CurrentToken.Type == "cmd") {
       break;
+    } else if (InsideCommand && CurrentToken.Type == "stp") {
+      InsideCommand = false;
+      continue;
     }
-    if (CurrentToken.Type == "dig") {
-      AddedTotal += std::stoi(CurrentToken.TokenName);
-    } else if (CurrentToken.Type == "cmd") {
-      InsideCommand = true;
-      AddedTotal +=
-          BridgeFncRtr(SliceStuff(TokenIndex + 1, Tokens.size() - 1, Tokens),
-                       TokenIndex, LineIndex, CurrentToken.TokenName);
-    } else {
-      OutError(
-          Tokens, LineIndex, TokenIndex,
-          "Cannot use string data type for addition"); // or var because variables
-                                                       // are not supported
-                                                       // right now
+    if (!InsideCommand) {
+      if (CurrentToken.Type == "dig") {
+        AddedTotal += std::stod(CurrentToken.TokenName);
+      } else if (CurrentToken.Type == "cmd") {
+        InsideCommand = true;
+        AddedTotal +=
+            BridgeFncRtr(SliceStuff(TokenIndex + 1, Tokens.size() - 1, Tokens),
+                         TokenIndex, LineIndex, CurrentToken.TokenName);
+      } else if (CurrentToken.Type == "stp") {
+        break;
+      } else {
+        OutError(
+            Tokens, LineIndex, TokenIndex,
+            "Cannot use string data type for addition"); // or var but variables
+                                                         // are not supported
+                                                         // right now
+      }
     }
   }
   return AddedTotal;
@@ -198,7 +269,7 @@ void CheckSyntax(const TokenGrid_t &labeledtoken) {
 void OutError(const Line_t &ErrLine, const int &RowLine, const int &ColLine,
               const std::string ErrMsg) {
 
-  std::string ErrPointer = " ", underline = "";
+  std::string ErrPointer = "";
   for (int TokenIndex = 0; TokenIndex < ErrLine.size(); TokenIndex++) {
     std::cout << ErrLine.at(TokenIndex).TokenName << ' ';
     if (TokenIndex == ColLine) {
@@ -206,10 +277,11 @@ void OutError(const Line_t &ErrLine, const int &RowLine, const int &ColLine,
           std::string(ErrLine.at(TokenIndex).TokenName.size() / 2, ' ');
       ErrPointer.append("^");
     } else {
-      ErrPointer += std::string(ErrLine.at(TokenIndex).TokenName.size(), ' ');
+      ErrPointer +=
+          std::string(ErrLine.at(TokenIndex).TokenName.size() + 1, ' ');
     }
   }
-  std::cout << '\n' << ErrPointer;
+  std::cout << "\n\033[1;31m" << ErrPointer;
   std::cout << "\033[1;31m" << "\nERR[" << RowLine << "|" << ColLine
             << "] : " << ErrMsg << "\033[0m" << '\n';
   exit(1);
@@ -230,7 +302,7 @@ TokenGrid Tokenizer(const std::string &codelines) {
     }
     if (inString) {
       currentToken += ch;
-      if (ch == '"') { 
+      if (ch == '"') { // closing quote
         inString = false;
         currentLine.push_back(currentToken);
         currentToken.clear();
@@ -290,7 +362,7 @@ TokenGrid_t CreateLabeledTokenTable(const TokenGrid &TokenizedLines) {
             token_struct.Type = "opr"; // operator
           else if (tokenStr.at(0) == '!')
             token_struct.Type = "mmd"; // mid line command
-          else if (tokenStr == "|") {
+          else if (tokenStr == "~") {
             token_struct.Type =
                 "stp"; // stops a command from executing till a point
           } else
