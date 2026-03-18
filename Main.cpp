@@ -1,5 +1,6 @@
 
 // Any unncessary indentations are caused by AstroNvim :) 
+// Curently it only supports the "out" command. Variable declaration is not allowed right now :(
 #include <cstdlib>
 #include <iostream>
 #include <string>
