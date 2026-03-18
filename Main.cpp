@@ -1,12 +1,14 @@
-// Any unnecessary indetentaions are caused by AstroNvim :) 
+
+// Any unncessary indentations are caused by AstroNvim :) 
 #include <cstdlib>
 #include <iostream>
 #include <string>
 #include <vector>
 
 const std::vector<std::string> Commands = {
-    "out", "in",  "decm", "decv",
-    "add", "min", "div",  "mult"}; // list of valid commands
+    "out", "in",   "decm", "decv", "add", "min",
+    "div", "mult", "+",    "-",    "*",   "/"}; // list of valid commands
+
 struct token {
   std::string Type;
   std::string TokenName;
@@ -34,7 +36,7 @@ double BridgeFncRtr(const Line_t &Tokens, const int &TokenIndex,
 // std::string &cmd); // does not return anything
 double AddF(const Line_t &Tokens, const int &LineIndex);
 double MinF(const Line_t &Tokens, const int &LineIndex);
-// double MultF(const Line_t &Tokens, const int &LineIndex);
+double MultF(const Line_t &Tokens, const int &LineIndex);
 double DivF(const Line_t &Tokens, const int &LineIndex);
 void OutError(const Line_t &ErrLine, const int &RowLine, const int &ColLine,
               const std::string ErrMsg);
@@ -71,7 +73,7 @@ T SliceStuff(const int &Start, const int &End,
 
 int main() {
   std::string Code = R"(
-  out add 10 div min 28,30 ~ 10; 
+  afheuhfe x;
   )";
 
   TokenGrid tokens = Tokenizer(Code);
@@ -93,24 +95,54 @@ void ExecuteMainCode(const TokenGrid_t &labeledtoken) {
     SlicedLine = SliceStuff(1, Line.size() - 1, Line);
     if (token == "out") {
       OutF(SlicedLine, LineIndex);
-    } else if (token == "add") {
-      AddF(SlicedLine, LineIndex);
     }
   }
 }
 double BridgeFncRtr(const Line_t &Tokens, const int &TokenIndex,
                     const int &LineIndex, const std::string &cmd) {
-  if (cmd == "min") {
+  if (cmd == "min" || cmd == "-") {
     return MinF(Tokens, TokenIndex);
-  } else if (cmd == "add") {
+  } else if (cmd == "add" || cmd == "+") {
     return AddF(Tokens, TokenIndex);
-  } else if (cmd == "div") {
+  } else if (cmd == "div" || cmd == "-") {
     return DivF(Tokens, TokenIndex);
   } else {
     OutError(Tokens, LineIndex, TokenIndex,
              "Cannot use void commands inside other commands");
     return 0;
   }
+}
+double MultF(const Line_t &Tokens, const int &LineIndex) {
+  double Multiplied = 1;
+  token CurrentToken;
+  bool InsideCommand = false;
+  for (int TokenIndex = 1; TokenIndex < Tokens.size(); TokenIndex++) {
+    CurrentToken = Tokens.at(TokenIndex);
+    if (InsideCommand && CurrentToken.Type == "cmd") {
+      break;
+    } else if (InsideCommand && CurrentToken.Type == "stp") {
+      InsideCommand = false;
+      continue;
+    }
+    if (!InsideCommand) {
+      if (CurrentToken.Type == "dig")
+        Multiplied *= std::stod(CurrentToken.TokenName);
+      else if (CurrentToken.Type == "cmd")
+        Multiplied *=
+            BridgeFncRtr(SliceStuff(TokenIndex + 1, Tokens.size() - 1, Tokens),
+                         TokenIndex, LineIndex, CurrentToken.TokenName);
+      else if (CurrentToken.Type == "stp")
+        break;
+      else
+        OutError(
+            Tokens, LineIndex, TokenIndex,
+            "Cannot use string data type for subtraction"); // or var but
+                                                            // variables are not
+                                                            // supported right
+                                                            // now
+    }
+  }
+  return Multiplied;
 }
 double DivF(const Line_t &Tokens, const int &LineIndex) {
   double Divided;
@@ -273,9 +305,7 @@ void OutError(const Line_t &ErrLine, const int &RowLine, const int &ColLine,
   for (int TokenIndex = 0; TokenIndex < ErrLine.size(); TokenIndex++) {
     std::cout << ErrLine.at(TokenIndex).TokenName << ' ';
     if (TokenIndex == ColLine) {
-      ErrPointer +=
-          std::string(ErrLine.at(TokenIndex).TokenName.size() / 2, ' ');
-      ErrPointer.append("^");
+      ErrPointer += std::string(ErrLine.at(TokenIndex).TokenName.size(), '^');
     } else {
       ErrPointer +=
           std::string(ErrLine.at(TokenIndex).TokenName.size() + 1, ' ');
