@@ -30,6 +30,8 @@ TokenGrid_t CreateLabeledTokenTable(const TokenGrid &TokenizedLines) {
             token_struct.Type = "mmd";
           else if (tokenStr == "~")
             token_struct.Type = "stp";
+          else if (tokenStr == ",")
+            token_struct.Type = "ign";
           else
             token_struct.Type = "???";
         }
