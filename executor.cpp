@@ -68,6 +68,8 @@ double AddC(const int TokenIndexOrg, const Line_t &Tokens, const int &LineIndex,
                          CurrentToken.TokenName, AllTokens);
       } else if (CurrentToken.Type == "stp") {
         break;
+      } else if (CurrentToken.Type == "ign") {
+        continue;
       } else if (CurrentToken.Type == "str") {
         OutError(
             Tokens, LineIndex, TokenIndex + TokenIndexOrg + 1,
@@ -95,6 +97,8 @@ double MinC(const int TokenIndexOrg, const Line_t &Tokens, const int &LineIndex,
 
   else if (Tokens.at(0).Type == "dig")
     Subtracted = std::stod(Tokens.at(0).TokenName);
+  else if (CurrentToken.Type == "ign")
+    Subtracted = 0;
   else if (Tokens.at(0).Type == "str")
     OutError(AllTokens, LineIndex, TokenIndexOrg + 1,
              "Cannot use string data type for subtraction");
@@ -117,6 +121,8 @@ double MinC(const int TokenIndexOrg, const Line_t &Tokens, const int &LineIndex,
             LineIndex, CurrentToken.TokenName, AllTokens);
       } else if (CurrentToken.Type == "stp") {
         break;
+      } else if (CurrentToken.Type == "ign") {
+        continue;
       } else if (CurrentToken.Type == "str") {
         OutError(
             AllTokens, LineIndex, TokenIndex + TokenIndexOrg + 1,
@@ -144,6 +150,8 @@ double DivC(const int TokenIndexOrg, const Line_t &Tokens, const int &LineIndex,
 
   else if (Tokens.at(0).Type == "dig")
     Divided = std::stod(Tokens.at(0).TokenName);
+  else if (CurrentToken.Type == "ign")
+    Divided = 0;
   else
     OutError(Tokens, LineIndex, 0, "Cannot use string data type for division");
 
@@ -157,7 +165,7 @@ double DivC(const int TokenIndexOrg, const Line_t &Tokens, const int &LineIndex,
     }
     if (!InsideCommand) {
       if (CurrentToken.Type == "dig") {
-        Divided -= std::stod(CurrentToken.TokenName);
+        Divided /= std::stod(CurrentToken.TokenName);
       } else if (CurrentToken.Type == "cmd") {
         InsideCommand = true;
         Divided /= BridgeFncRtr(
@@ -165,13 +173,13 @@ double DivC(const int TokenIndexOrg, const Line_t &Tokens, const int &LineIndex,
             LineIndex, CurrentToken.TokenName, AllTokens);
       } else if (CurrentToken.Type == "stp") {
         break;
-      } else if (CurrentToken.Type == "str") {
-        OutError(AllTokens, LineIndex, TokenIndex + TokenIndexOrg + 1,
-                 "Cannot use string data type for division"); // or var but
-                                                              // variables are
-                                                              // not supported
-                                                              // right now
       }
+    } else if (CurrentToken.Type == "str") {
+      OutError(AllTokens, LineIndex, TokenIndex + TokenIndexOrg + 1,
+               "Cannot use string data type for division"); // or var but
+                                                            // variables are
+                                                            // not supported
+                                                            // right now
     }
   }
   return Divided;
@@ -181,7 +189,20 @@ double MultC(const int TokenIndexOrg, const Line_t &Tokens,
 
   token CurrentToken;
   bool InsideCommand = false;
-  double Multplied = 1;
+  double Multiplied;
+  if (Tokens.at(0).Type == "cmd") {
+    Multiplied = BridgeFncRtr(SliceStuff(1, Tokens.size() - 1, Tokens),
+                              TokenIndexOrg + 1, LineIndex,
+                              Tokens.at(0).TokenName, AllTokens);
+    InsideCommand = true;
+  }
+
+  else if (Tokens.at(0).Type == "dig")
+    Multiplied = std::stod(Tokens.at(0).TokenName);
+  else if (CurrentToken.Type == "ign")
+    Multiplied = 0;
+  else
+    OutError(Tokens, LineIndex, 0, "Cannot use string data type for division");
 
   for (size_t TokenIndex = 1; TokenIndex < Tokens.size(); TokenIndex++) {
     CurrentToken = Tokens.at(TokenIndex);
@@ -193,24 +214,24 @@ double MultC(const int TokenIndexOrg, const Line_t &Tokens,
     }
     if (!InsideCommand) {
       if (CurrentToken.Type == "dig") {
-        Multplied *= std::stod(CurrentToken.TokenName);
+        Multiplied *= std::stod(CurrentToken.TokenName);
       } else if (CurrentToken.Type == "cmd") {
         InsideCommand = true;
-        Multplied *= BridgeFncRtr(
+        Multiplied *= BridgeFncRtr(
             SliceStuff(TokenIndex + 1, Tokens.size() - 1, Tokens), TokenIndex,
             LineIndex, CurrentToken.TokenName, AllTokens);
       } else if (CurrentToken.Type == "stp") {
         break;
-      } else if (CurrentToken.Type == "str") {
-        OutError(AllTokens, LineIndex, TokenIndex + TokenIndexOrg + 1,
-                 "Cannot use string data type for division"); // or var but
-                                                              // variables are
-                                                              // not supported
-                                                              // right now
       }
+    } else if (CurrentToken.Type == "str") {
+      OutError(AllTokens, LineIndex, TokenIndex + TokenIndexOrg + 1,
+               "Cannot use string data type for division"); // or var but
+                                                            // variables are
+                                                            // not supported
+                                                            // right now
     }
   }
-  return Multplied;
+  return Multiplied;
 }
 
 void OutF(const Line_t &LineTokens, const int &RowLine,
