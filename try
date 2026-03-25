@@ -1,0 +1,7 @@
+decm 100;
+decv -s Name -d Age -b student; 
+set "James" : Names;
+set 22 : Age;
+set T : student; 
+
+

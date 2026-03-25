@@ -1,257 +1,417 @@
 #include "executor.h"
 #include "errors.h"
+#include "types.h"
 #include <iostream>
 
-double BridgeFncRtr(const Line_t &SlicedTokens, const int &TokenIndex,
-                    const int &LineIndex, const std::string &cmd,
-                    const Line_t &AllTokens);
-double AddC(const int TokenIndexOrg, const Line_t &Tokens, const int &LineIndex,
-            const Line_t &AllTokens);
-double MinC(const int TokenIndexOrg, const Line_t &Tokens, const int &LineIndex,
-            const Line_t &AllTokens);
-double MultC(const int TokenIndexOrg, const Line_t &Tokens,
-             const int &LineIndex, const Line_t &AllTokens);
-double DivC(const int TokenIndexOrg, const Line_t &Tokens, const int &LineIndex,
-            const Line_t &AllTokens);
-void OutF(const Line_t &LineTokens, const int &RowLine,
-          const Line_t &AllTokens);
+struct BundleData {
+  bool found;
+  std::string dataType;
+  std::string data;
+};
 
-void ExecuteMainCode(const TokenGrid_t &labeledtoken) {
-  Line_t SlicedLine;
+CodeState CurrentState;
+
+double BridgeFncRtr(const Line_t &Tokens);
+double AddC(const Line_t &Tokens);
+double MinC(const Line_t &Tokens);
+double MultC(const Line_t &Tokens);
+double DivC(const Line_t &Tokens);
+void OutF(const Line_t &Tokens);
+void DecmC(const int &size);
+bool DecvC(const Line_t &Tokens);
+void SetC(const Line_t &Tokens);
+
+void DeclareIdentifiersAndMemory(const TokenGrid_t &labeledtoken) {
   for (size_t LineIndex = 0; LineIndex < labeledtoken.size(); LineIndex++) {
+    CurrentState.CurrentLine = LineIndex;
+    CurrentState.TokenIndex = 0;
+    CurrentState.CurrentTokens = labeledtoken.at(LineIndex);
     Line_t Line = labeledtoken.at(LineIndex);
-    if (Line.empty()) {
+    if (Line.empty())
       continue;
-    }
-    std::string token = Line.at(0).TokenName;
-    SlicedLine = SliceStuff(1, Line.size() - 1, Line);
-    if (token == "out") {
-      OutF(SlicedLine, LineIndex, Line);
-    }
+
+    std::string cmd = Line.at(0).TokenName;
+    Line_t SlicedLine = SliceStuff(1, Line.size() - 1, Line);
+
+    if (cmd == "decv")
+      DecvC(SlicedLine);
+    if (cmd == "decm")
+      DecmC(std::stoi(SlicedLine.at(0).TokenName));
+  }
+}
+void ExecuteMainCode(const TokenGrid_t &labeledtoken) {
+  for (size_t LineIndex = 0; LineIndex < labeledtoken.size(); LineIndex++) {
+    CurrentState.CurrentLine = LineIndex;
+    CurrentState.TokenIndex = 0;
+    CurrentState.CurrentTokens = labeledtoken.at(LineIndex);
+
+    Line_t Line = labeledtoken.at(LineIndex);
+    if (Line.empty())
+      continue;
+
+    std::string cmd = Line.at(0).TokenName;
+    Line_t SlicedLine = SliceStuff(1, Line.size() - 1, Line);
+
+    if (cmd == "out")
+      OutF(SlicedLine);
+    else if (cmd == "set")
+      SetC(SlicedLine);
   }
 }
 
-double BridgeFncRtr(const Line_t &SlicedTokens, const int &TokenIndex,
-                    const int &LineIndex, const std::string &cmd,
-                    const Line_t &AllTokens) {
+double BridgeFncRtr(const Line_t &Tokens) {
+  // Tokens[0] is the command name, rest are its arguments
+  std::string cmd = Tokens.at(0).TokenName;
+  Line_t args = SliceStuff(1, Tokens.size() - 1, Tokens);
+
+  // Increment TokenIndex to point past the command name
+  CurrentState.TokenIndex += 1;
+
   if (cmd == "add")
-    return AddC(TokenIndex, SlicedTokens, LineIndex, AllTokens);
-  else if (cmd == "min") {
-    return MinC(TokenIndex, SlicedTokens, LineIndex, AllTokens);
-  } else {
-    OutError(AllTokens, LineIndex, TokenIndex,
-             "Cannot use void commands inside other commands");
+    return AddC(args);
+  else if (cmd == "min")
+    return MinC(args);
+  else if (cmd == "mult")
+    return MultC(args);
+  else if (cmd == "div")
+    return DivC(args);
+  else {
+    OutError("Cannot use void commands inside other commands");
     return 0;
   }
 }
-double AddC(const int TokenIndexOrg, const Line_t &Tokens, const int &LineIndex,
-            const Line_t &AllTokens) {
+
+double AddC(const Line_t &Tokens) {
   double AddedTotal = 0;
-  token CurrentToken;
   bool InsideCommand = false;
-  for (size_t TokenIndex = 0; TokenIndex < Tokens.size(); TokenIndex++) {
-    CurrentToken = Tokens.at(TokenIndex);
-    if (InsideCommand && CurrentToken.Type == "cmd") {
+
+  for (size_t i = 0; i < Tokens.size(); i++) {
+    CurrentState.TokenIndex += 1;
+    token CurrentToken = Tokens.at(i);
+
+    if (InsideCommand && CurrentToken.Type == "cmd")
       break;
-    } else if (InsideCommand && CurrentToken.Type == "stp") {
+    else if (InsideCommand && CurrentToken.Type == "stp") {
       InsideCommand = false;
       continue;
     }
+
     if (!InsideCommand) {
       if (CurrentToken.Type == "dig") {
         AddedTotal += std::stod(CurrentToken.TokenName);
       } else if (CurrentToken.Type == "cmd") {
         InsideCommand = true;
-        AddedTotal +=
-            BridgeFncRtr(SliceStuff(TokenIndex + 1, Tokens.size() - 1, Tokens),
-                         TokenIndex + TokenIndexOrg, LineIndex,
-                         CurrentToken.TokenName, AllTokens);
+        AddedTotal += BridgeFncRtr(SliceStuff(i, Tokens.size() - 1, Tokens));
       } else if (CurrentToken.Type == "stp") {
         break;
       } else if (CurrentToken.Type == "ign") {
         continue;
       } else if (CurrentToken.Type == "str") {
-        OutError(
-            Tokens, LineIndex, TokenIndex + TokenIndexOrg + 1,
-            "Cannot use string data type for addition"); // or var but variables
-                                                         // are not supported
-                                                         // right now
+        OutError("Cannot use string data type for addition");
       }
     }
   }
   return AddedTotal;
 }
-double MinC(const int TokenIndexOrg, const Line_t &Tokens, const int &LineIndex,
-            const Line_t &AllTokens) {
 
-  token CurrentToken;
+double MinC(const Line_t &Tokens) {
+  double Subtracted = 0;
   bool InsideCommand = false;
-  double Subtracted;
 
-  if (Tokens.at(0).Type == "cmd") {
-    Subtracted =
-        BridgeFncRtr(SliceStuff(1, Tokens.size() - 1, Tokens), TokenIndexOrg,
-                     LineIndex, Tokens.at(0).TokenName, AllTokens);
+  token first = Tokens.at(0);
+  CurrentState.TokenIndex += 1;
+
+  if (first.Type == "cmd") {
+    Subtracted = BridgeFncRtr(SliceStuff(0, Tokens.size() - 1, Tokens));
     InsideCommand = true;
+  } else if (first.Type == "dig") {
+    Subtracted = std::stod(first.TokenName);
+  } else if (first.Type == "ign") {
+    Subtracted = 0;
+  } else if (first.Type == "str") {
+    OutError("Cannot use string data type for subtraction");
   }
 
-  else if (Tokens.at(0).Type == "dig")
-    Subtracted = std::stod(Tokens.at(0).TokenName);
-  else if (CurrentToken.Type == "ign")
-    Subtracted = 0;
-  else if (Tokens.at(0).Type == "str")
-    OutError(AllTokens, LineIndex, TokenIndexOrg + 1,
-             "Cannot use string data type for subtraction");
+  for (size_t i = 1; i < Tokens.size(); i++) {
+    CurrentState.TokenIndex += 1;
+    token CurrentToken = Tokens.at(i);
 
-  for (size_t TokenIndex = 1; TokenIndex < Tokens.size(); TokenIndex++) {
-    CurrentToken = Tokens.at(TokenIndex);
-    if (InsideCommand && CurrentToken.Type == "cmd") {
+    if (InsideCommand && CurrentToken.Type == "cmd")
       break;
-    } else if (InsideCommand && CurrentToken.Type == "stp") {
+    else if (InsideCommand && CurrentToken.Type == "stp") {
       InsideCommand = false;
       continue;
     }
+
     if (!InsideCommand) {
       if (CurrentToken.Type == "dig") {
         Subtracted -= std::stod(CurrentToken.TokenName);
       } else if (CurrentToken.Type == "cmd") {
         InsideCommand = true;
-        Subtracted -= BridgeFncRtr(
-            SliceStuff(TokenIndex + 1, Tokens.size() - 1, Tokens), TokenIndex,
-            LineIndex, CurrentToken.TokenName, AllTokens);
+        Subtracted -= BridgeFncRtr(SliceStuff(i, Tokens.size() - 1, Tokens));
       } else if (CurrentToken.Type == "stp") {
         break;
       } else if (CurrentToken.Type == "ign") {
         continue;
       } else if (CurrentToken.Type == "str") {
-        OutError(
-            AllTokens, LineIndex, TokenIndex + TokenIndexOrg + 1,
-            "Cannot use string data type for subtraction"); // or var but
-                                                            // variables are not
-                                                            // supported right
-                                                            // now
+        OutError("Cannot use string data type for subtraction");
       }
     }
   }
   return Subtracted;
 }
-double DivC(const int TokenIndexOrg, const Line_t &Tokens, const int &LineIndex,
-            const Line_t &AllTokens) {
 
-  token CurrentToken;
+double DivC(const Line_t &Tokens) {
+  double Divided = 0;
   bool InsideCommand = false;
-  double Divided;
-  if (Tokens.at(0).Type == "cmd") {
-    Divided = BridgeFncRtr(SliceStuff(1, Tokens.size() - 1, Tokens),
-                           TokenIndexOrg + 1, LineIndex, Tokens.at(0).TokenName,
-                           AllTokens);
+
+  token first = Tokens.at(0);
+  CurrentState.TokenIndex += 1;
+
+  if (first.Type == "cmd") {
+    Divided = BridgeFncRtr(SliceStuff(0, Tokens.size() - 1, Tokens));
     InsideCommand = true;
+  } else if (first.Type == "dig") {
+    Divided = std::stod(first.TokenName);
+  } else if (first.Type == "ign") {
+    Divided = 0;
+  } else {
+    OutError("Cannot use string data type for division");
   }
 
-  else if (Tokens.at(0).Type == "dig")
-    Divided = std::stod(Tokens.at(0).TokenName);
-  else if (CurrentToken.Type == "ign")
-    Divided = 0;
-  else
-    OutError(Tokens, LineIndex, 0, "Cannot use string data type for division");
+  for (size_t i = 1; i < Tokens.size(); i++) {
+    CurrentState.TokenIndex += 1;
+    token CurrentToken = Tokens.at(i);
 
-  for (size_t TokenIndex = 1; TokenIndex < Tokens.size(); TokenIndex++) {
-    CurrentToken = Tokens.at(TokenIndex);
-    if (InsideCommand && CurrentToken.Type == "cmd") {
+    if (InsideCommand && CurrentToken.Type == "cmd")
       break;
-    } else if (InsideCommand && CurrentToken.Type == "stp") {
+    else if (InsideCommand && CurrentToken.Type == "stp") {
       InsideCommand = false;
       continue;
     }
+
     if (!InsideCommand) {
       if (CurrentToken.Type == "dig") {
         Divided /= std::stod(CurrentToken.TokenName);
       } else if (CurrentToken.Type == "cmd") {
         InsideCommand = true;
-        Divided /= BridgeFncRtr(
-            SliceStuff(TokenIndex + 1, Tokens.size() - 1, Tokens), TokenIndex,
-            LineIndex, CurrentToken.TokenName, AllTokens);
+        Divided /= BridgeFncRtr(SliceStuff(i, Tokens.size() - 1, Tokens));
       } else if (CurrentToken.Type == "stp") {
         break;
+      } else if (CurrentToken.Type == "str") {
+        OutError("Cannot use string data type for division");
       }
-    } else if (CurrentToken.Type == "str") {
-      OutError(AllTokens, LineIndex, TokenIndex + TokenIndexOrg + 1,
-               "Cannot use string data type for division"); // or var but
-                                                            // variables are
-                                                            // not supported
-                                                            // right now
     }
   }
   return Divided;
 }
-double MultC(const int TokenIndexOrg, const Line_t &Tokens,
-             const int &LineIndex, const Line_t &AllTokens) {
 
-  token CurrentToken;
+double MultC(const Line_t &Tokens) {
+  double Multiplied = 1;
   bool InsideCommand = false;
-  double Multiplied;
-  if (Tokens.at(0).Type == "cmd") {
-    Multiplied = BridgeFncRtr(SliceStuff(1, Tokens.size() - 1, Tokens),
-                              TokenIndexOrg + 1, LineIndex,
-                              Tokens.at(0).TokenName, AllTokens);
+
+  token first = Tokens.at(0);
+  CurrentState.TokenIndex += 1;
+
+  if (first.Type == "cmd") {
+    Multiplied = BridgeFncRtr(SliceStuff(0, Tokens.size() - 1, Tokens));
     InsideCommand = true;
+  } else if (first.Type == "dig") {
+    Multiplied = std::stod(first.TokenName);
+  } else if (first.Type == "ign") {
+    Multiplied = 0;
+  } else {
+    OutError("Cannot use string data type for multiplication");
   }
 
-  else if (Tokens.at(0).Type == "dig")
-    Multiplied = std::stod(Tokens.at(0).TokenName);
-  else if (CurrentToken.Type == "ign")
-    Multiplied = 0;
-  else
-    OutError(Tokens, LineIndex, 0, "Cannot use string data type for division");
+  for (size_t i = 1; i < Tokens.size(); i++) {
+    CurrentState.TokenIndex += 1;
+    token CurrentToken = Tokens.at(i);
 
-  for (size_t TokenIndex = 1; TokenIndex < Tokens.size(); TokenIndex++) {
-    CurrentToken = Tokens.at(TokenIndex);
-    if (InsideCommand && CurrentToken.Type == "cmd") {
+    if (InsideCommand && CurrentToken.Type == "cmd")
       break;
-    } else if (InsideCommand && CurrentToken.Type == "stp") {
+    else if (InsideCommand && CurrentToken.Type == "stp") {
       InsideCommand = false;
       continue;
     }
+
     if (!InsideCommand) {
       if (CurrentToken.Type == "dig") {
         Multiplied *= std::stod(CurrentToken.TokenName);
       } else if (CurrentToken.Type == "cmd") {
         InsideCommand = true;
-        Multiplied *= BridgeFncRtr(
-            SliceStuff(TokenIndex + 1, Tokens.size() - 1, Tokens), TokenIndex,
-            LineIndex, CurrentToken.TokenName, AllTokens);
+        Multiplied *= BridgeFncRtr(SliceStuff(i, Tokens.size() - 1, Tokens));
       } else if (CurrentToken.Type == "stp") {
         break;
+      } else if (CurrentToken.Type == "str") {
+        OutError("Cannot use string data type for multiplication");
       }
-    } else if (CurrentToken.Type == "str") {
-      OutError(AllTokens, LineIndex, TokenIndex + TokenIndexOrg + 1,
-               "Cannot use string data type for division"); // or var but
-                                                            // variables are
-                                                            // not supported
-                                                            // right now
     }
   }
   return Multiplied;
 }
+void DecmC(const int &size) {
+  CurrentState.TokenIndex += 1;
+  if (g_memDeclared) {
+    OutError("decm error. Memory already declared.");
+    return;
+  }
+  g_pool.resize(size);
+  for (int i = size - 1; i >= 0; i--)
+    g_freeSlots.push(i);
+  g_memDeclared = true;
+}
+bool DecvC(const Line_t &Tokens) {
+  std::string DataType;
+  int count = 1; // can change for arrays when implemented
+  if (!g_memDeclared) {
+    OutError("Memory not declared. Cannot declare variables.");
+  }
+  for (size_t TokenIndex = 0; TokenIndex < Tokens.size(); TokenIndex++) {
+    CurrentState.TokenIndex += 1;
+    token LineToken = Tokens.at(TokenIndex);
+    if (LineToken.Type == "mmd") {
+      for (const char instruction : LineToken.TokenName) {
+        switch (instruction) {
+        case '-':
+          break;
+        case 'd':
+          DataType = "dig"; // digit (could be float or int)
+          break;
+        case 's':
+          DataType = "str"; // string
+          break;
+        case 'b':
+          DataType = "bol"; // boolean
+          break;
+        default:
+          OutError("Invalid data type given during variable declaration. "
+                   "Cannot interpret");
+          return false;
+        }
+      }
+    } else if (LineToken.Type == "var") {
+      if ((int)g_freeSlots.size() < count) {
+        OutError("decm error. Ran out of memory");
+        return false;
+      }
+      Variable VariableToken;
+      VariableToken.name = LineToken.TokenName;
+      VariableToken.type = DataType;
+      for (int i = 0; i < count; i++) {
+        int index = g_freeSlots.top();
+        g_freeSlots.pop();
+        g_pool[index].occupied = true;
+        g_pool[index].type = DataType;
+        g_pool[index].value = "";
+        VariableToken.slots.push_back(index);
+      }
+      g_vars[LineToken.TokenName] = VariableToken;
 
-void OutF(const Line_t &LineTokens, const int &RowLine,
-          const Line_t &AllTokens) {
-  token CurrentToken;
-  for (size_t TokenIndex = 0; TokenIndex < LineTokens.size(); TokenIndex++) {
-    CurrentToken = LineTokens.at(TokenIndex);
-    if (CurrentToken.Type == "str" || CurrentToken.Type == "dig") {
-      if (CurrentToken.Type == "str")
-        std::cout << SliceStuff(1, CurrentToken.TokenName.size() - 2,
-                                CurrentToken.TokenName)
-                  << '\n';
-      else
-        std::cout << CurrentToken.TokenName << '\n';
+    } else {
+      OutError("Garbage data given for variable declaration. \n decv command "
+               "only takes data type(s) and variable name(s). ");
+      return true;
+    }
+  }
+  return true;
+}
+BundleData SearchVariables(const std::string &name) {
+  BundleData Variable;
+  if (!g_vars.count(name))
+    OutError("Undeclared variable,'" + name + "', used");
+  Variable.found = true;
+  Variable.data = g_pool[g_vars[name].slots[0]].value;
+  Variable.dataType = g_pool[g_vars[name].slots[0]].type;
+  return Variable;
+}
+void StoreDataInVariable(const std::string &name, const std::string &data) {
+  if (!g_vars.count(name))
+    OutError("Undeclared variable,'" + name + "', used for assignment");
+  g_pool[g_vars[name].slots[0]].value = data;
+}
+void SetC(const Line_t &Tokens) {
+  CurrentState.TokenIndex += 1;
+  BundleData RawDataToStore;
+
+  if (Tokens.back().Type != "None") {
+    OutError("set command requires assigning operator but was not given.");
+  }
+
+  int asioperatorindex = std::stoi(Tokens.back().TokenName);
+
+  if (asioperatorindex < 1 || (size_t)asioperatorindex > Tokens.size() - 2) {
+    CurrentState.TokenIndex = asioperatorindex;
+    OutError("Assigning operator misplaced for set command\n"
+             "Assignment has format: set <data> : <identifier>");
+  }
+
+  // ---- get the data side ----
+  if (Tokens.at(0).Type != "cmd") {
+    Line_t DataToStore = SliceStuff(0, asioperatorindex - 2, Tokens);
+    if (DataToStore.size() != 1)
+      OutError("Cannot store more or less than one data in variable(s)");
+    Line_t().swap(DataToStore);
+
+    if (Tokens.at(0).Type == "var") {
+      BundleData SearchedVariable = SearchVariables(Tokens.at(0).TokenName);
+      if (!SearchedVariable.found)
+        OutError("Undeclared variable,'" + Tokens.at(0).TokenName +
+                 "' used for assignment");
+      RawDataToStore.data = SearchedVariable.data;
+      RawDataToStore.dataType = SearchedVariable.dataType;
+    } else {
+      RawDataToStore.data = Tokens.at(0).TokenName;
+      RawDataToStore.dataType = Tokens.at(0).Type;
+    }
+  } else {
+    RawDataToStore.data = std::to_string(
+        BridgeFncRtr(SliceStuff(0, asioperatorindex - 2, Tokens)));
+    RawDataToStore.dataType = "dig";
+  }
+
+  // ---- assign to variable(s) ----
+  for (size_t TokenIndex = asioperatorindex; TokenIndex < Tokens.size() - 1;
+       TokenIndex++) {
+    CurrentState.TokenIndex += 1;
+    token CurrentVariable = Tokens.at(TokenIndex);
+
+    if (CurrentVariable.Type == "ign")
+      continue;
+
+    if (CurrentVariable.Type != "var") {
+      OutError("Garbage token given after assignment operator.\n"
+               "Only identifiers can be used to store data");
+    }
+
+    BundleData VariableToStoreIn = SearchVariables(CurrentVariable.TokenName);
+    if (VariableToStoreIn.dataType != RawDataToStore.dataType)
+      OutError(
+          "Assignment error. Data type mismatch between data and identifier");
+
+    StoreDataInVariable(CurrentVariable.TokenName, RawDataToStore.data);
+  }
+}
+void OutF(const Line_t &Tokens) {
+  for (size_t i = 0; i < Tokens.size(); i++) {
+    CurrentState.TokenIndex += 1;
+    token CurrentToken = Tokens.at(i);
+
+    if (CurrentToken.Type == "str")
+      std::cout << SliceStuff(1, CurrentToken.TokenName.size() - 2,
+                              CurrentToken.TokenName);
+    else if (CurrentToken.Type == "dig" || CurrentToken.Type == "bol")
+      std::cout << CurrentToken.TokenName;
+    else if (CurrentToken.Type == "var") {
+      BundleData Variable = SearchVariables(CurrentToken.TokenName);
+      if (Variable.dataType == "dig" || Variable.dataType == "bol") {
+        std::cout << Variable.data;
+      } else {
+        // slice Variable.data, not CurrentToken.TokenName
+        std::cout << SliceStuff(1, Variable.data.size() - 2, Variable.data);
+      }
     } else if (CurrentToken.Type == "cmd") {
-      std::cout << BridgeFncRtr(SliceStuff(TokenIndex + 1,
-                                           LineTokens.size() - 1, LineTokens),
-                                TokenIndex + 1, RowLine, CurrentToken.TokenName,
-                                AllTokens)
-                << '\n';
+      std::cout << BridgeFncRtr(SliceStuff(i, Tokens.size() - 1, Tokens));
       return;
     }
   }

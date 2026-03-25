@@ -28,17 +28,18 @@ TokenGrid Tokenizer(const std::string &codelines) {
       inString = true;
       currentToken += ch;
     } else if (ch == ';') {
-      if (!currentToken.empty())
+      if (!currentToken.empty()) {
         currentLine.push_back(currentToken);
+      }
       if (!currentLine.empty())
         result.push_back(currentLine);
       currentToken.clear();
       currentLine.clear();
     } else if (ch == ' ' || ch == ',' || ch == '\t' || ch == '\n' ||
-               ch == '\r' || ch == '*' || ch == '@') {
+               ch == '\r' || ch == '*' || ch == '@' || ch == ':') {
       if (!currentToken.empty())
         currentLine.push_back(currentToken);
-      if (ch == '*' || ch == '@' || ch == '~' || ch == ',')
+      if (ch == '*' || ch == '@' || ch == ']' || ch == ',' || ch == ':')
         // ',' for error outputting
         currentLine.push_back(std::string(1, ch));
       currentToken.clear();
