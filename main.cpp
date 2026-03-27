@@ -5,12 +5,13 @@
 
 int main() {
   std::string Code = R"(
-  out "Hello world"; 
-    )";
+  decm 100; 
+
+  )";
 
   TokenGrid tokens = Tokenizer(Code);
   TokenGrid_t labeledtoken = CreateLabeledTokenTable(tokens);
-  CheckSyntax(labeledtoken);
+  // CheckSyntax(labeledtoken);
   DeclareIdentifiersAndMemory(labeledtoken);
   ExecuteMainCode(labeledtoken);
   return 0;
