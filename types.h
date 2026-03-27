@@ -1,3 +1,4 @@
+// types.h
 #pragma once
 #include <stack>
 #include <string>
@@ -38,7 +39,7 @@ struct CodeState { // used for outputting error
   std::string CurrentFile = "main";
 };
 
-extern CodeState CurrentState;
+inline CodeState CurrentState;
 
 template <typename T, typename U>
 bool SearchCh(const T &ToSearch, const U &DataToSearchFrom) {
@@ -55,3 +56,9 @@ T SliceStuff(const int &Start, const int &End, const T &DataToSlice) {
     SlicedT.push_back(DataToSlice.at(i));
   return SlicedT;
 }
+
+struct BundleData {
+  bool found;
+  std::string dataType;
+  std::string data;
+};

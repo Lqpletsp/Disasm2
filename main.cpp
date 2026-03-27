@@ -1,11 +1,11 @@
+#include "declarators.h"
 #include "executor.h"
 #include "lexer.h"
 #include "tokenizer.h"
 
 int main() {
   std::string Code = R"(
-  decm 20; 
-  decv -ad Nums*10; 
+  out "Hello world"; 
     )";
 
   TokenGrid tokens = Tokenizer(Code);
