@@ -263,6 +263,7 @@ void DecmC(const int &size) {
 }
 bool DecvC(const Line_t &Tokens) {
   std::string DataType;
+  bool array = false;
   int count = 1; // can change for arrays when implemented
   if (!g_memDeclared) {
     OutError("Memory not declared. Cannot declare variables.");
@@ -270,6 +271,18 @@ bool DecvC(const Line_t &Tokens) {
   for (size_t TokenIndex = 0; TokenIndex < Tokens.size(); TokenIndex++) {
     CurrentState.TokenIndex += 1;
     token LineToken = Tokens.at(TokenIndex);
+    if (array && LineToken.TokenName ==
+                     "*") // array declaration format: <identifier>*<size>. If
+                          // array is noticed then it handles * and <size>
+                          // immediately so need to skip it
+                          // this also means that you need to repeatedly mention
+                          // if the identifier is array or not
+
+      continue;
+    else if (array && LineToken.Type == "dig") {
+      array = false;
+      continue;
+    }
     if (LineToken.Type == "mmd") {
       for (const char instruction : LineToken.TokenName) {
         switch (instruction) {
@@ -284,6 +297,12 @@ bool DecvC(const Line_t &Tokens) {
         case 'b':
           DataType = "bol"; // boolean
           break;
+        case 'a':
+          array = true;
+
+          break;
+        case 'v':
+          array = false;
         default:
           OutError("Invalid data type given during variable declaration. "
                    "Cannot interpret");
@@ -291,14 +310,25 @@ bool DecvC(const Line_t &Tokens) {
         }
       }
     } else if (LineToken.Type == "var") {
+      if (array) {
+        try {
+          if (Tokens.at(TokenIndex + 2).Type == "dig")
+            count = std::stoi(Tokens.at(TokenIndex + 2).TokenName);
+        } catch (...) {
+          OutError("Not enough arguments given to declare an array identifier");
+        }
+      }
       if ((int)g_freeSlots.size() < count) {
         OutError("decm error. Ran out of memory");
         return false;
       }
+
       Variable VariableToken;
       VariableToken.name = LineToken.TokenName;
       VariableToken.type = DataType;
       for (int i = 0; i < count; i++) {
+        if (g_freeSlots.empty())
+          OutError("decm error. Ran out of memory");
         int index = g_freeSlots.top();
         g_freeSlots.pop();
         g_pool[index].occupied = true;

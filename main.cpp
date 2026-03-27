@@ -4,12 +4,8 @@
 
 int main() {
   std::string Code = R"(
-    decm 100; 
-    decv -s Name -d Age -b Student; 
-    set "James" : Name; 
-    set 20 : Age; 
-    set T : Student;
-    out Name,"|",Age,"|",Student;
+  decm 20; 
+  decv -ad Nums*10; 
     )";
 
   TokenGrid tokens = Tokenizer(Code);
