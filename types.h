@@ -1,5 +1,6 @@
 // types.h
 #pragma once
+#include <queue>
 #include <stack>
 #include <string>
 #include <unordered_map>
@@ -26,6 +27,7 @@ inline std::vector<MemSlot> g_pool;
 inline std::stack<int> g_freeSlots;
 inline std::unordered_map<std::string, Variable> g_vars;
 inline bool g_memDeclared = false;
+inline std::queue<int> DeclarationLines;
 
 using Line = std::vector<std::string>;
 using TokenGrid = std::vector<Line>;

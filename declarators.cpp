@@ -4,8 +4,10 @@
 void DecmC(const int &size);
 void DecvC(const Line_t &Tokens);
 void DeclareIdentifiersAndMemory(const TokenGrid_t &labeledtoken) {
-  for (size_t LineIndex = 0; LineIndex < labeledtoken.size(); LineIndex++) {
-    CurrentState.CurrentLine = LineIndex;
+  for (size_t Index = 0; Index < DeclarationLines.size(); Index++) {
+    CurrentState.CurrentLine = DeclarationLines.back();
+    size_t LineIndex = DeclarationLines.back();
+    DeclarationLines.pop();
     CurrentState.TokenIndex = 0;
     CurrentState.CurrentTokens = labeledtoken.at(LineIndex);
     Line_t Line = labeledtoken.at(LineIndex);

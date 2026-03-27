@@ -10,7 +10,8 @@ const std::vector<std::string> Commands = {"out", "decm", "decv", "add",
 
 TokenGrid_t CreateLabeledTokenTable(const TokenGrid &TokenizedLines) {
   TokenGrid_t LabelledTokenTable;
-  for (Line line : TokenizedLines) {
+  for (size_t LineIndex = 0; LineIndex < TokenizedLines.size(); LineIndex++) {
+    Line line = TokenizedLines.at(LineIndex);
     Line_t Labelledline;
     bool asi = false;
     token asiMetadata;
@@ -45,6 +46,7 @@ TokenGrid_t CreateLabeledTokenTable(const TokenGrid &TokenizedLines) {
       linecmd = line.at(0);
       Labelledline.push_back(token_struct);
     }
+    DeclarationLines.push(LineIndex);
     for (size_t TokenIndex = 1; TokenIndex < line.size(); TokenIndex++) {
       CurrentState.TokenIndex += 1;
       std::string tokenStr = line.at(TokenIndex);

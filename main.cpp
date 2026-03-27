@@ -5,9 +5,7 @@
 
 int main() {
   std::string Code = R"(
-  decm 100; 
-
-  )";
+  out "Hello world";)";
 
   TokenGrid tokens = Tokenizer(Code);
   TokenGrid_t labeledtoken = CreateLabeledTokenTable(tokens);
