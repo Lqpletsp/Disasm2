@@ -1,28 +1,9 @@
 #include "declarators.h"
 #include "errors.h"
 #include "types.h"
+#include <iostream>
 void DecmC(const int &size);
 void DecvC(const Line_t &Tokens);
-void DeclareIdentifiersAndMemory(const TokenGrid_t &labeledtoken) {
-  for (size_t Index = 0; Index < DeclarationLines.size(); Index++) {
-    CurrentState.CurrentLine = DeclarationLines.back();
-    size_t LineIndex = DeclarationLines.back();
-    DeclarationLines.pop();
-    CurrentState.TokenIndex = 0;
-    CurrentState.CurrentTokens = labeledtoken.at(LineIndex);
-    Line_t Line = labeledtoken.at(LineIndex);
-    if (Line.empty())
-      continue;
-
-    std::string cmd = Line.at(0).TokenName;
-    Line_t SlicedLine = SliceStuff(1, Line.size() - 1, Line);
-
-    if (cmd == "decv")
-      DecvC(SlicedLine);
-    if (cmd == "decm")
-      DecmC(std::stoi(SlicedLine.at(0).TokenName));
-  }
-}
 
 void DecmC(const int &size) {
   CurrentState.TokenIndex += 1;

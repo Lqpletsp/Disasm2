@@ -11,6 +11,7 @@ double MultC(const Line_t &Tokens);
 double DivC(const Line_t &Tokens);
 void OutF(const Line_t &Tokens);
 void SetC(const Line_t &Tokens);
+void InpC(const Line_t &Tokens);
 
 void ExecuteMainCode(const TokenGrid_t &labeledtoken) {
   for (size_t LineIndex = 0; LineIndex < labeledtoken.size(); LineIndex++) {
@@ -29,8 +30,11 @@ void ExecuteMainCode(const TokenGrid_t &labeledtoken) {
       OutF(SlicedLine);
     else if (cmd == "set")
       SetC(SlicedLine);
+    else if (cmd == "inp")
+      InpC(SlicedLine);
   }
 }
+void InpC(const Line_t &Tokens) { return; }
 
 double BridgeFncRtr(const Line_t &Tokens) {
   // Tokens[0] is the command name, rest are its arguments

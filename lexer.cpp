@@ -1,8 +1,8 @@
 
 #include "lexer.h"
+#include "declarators.h"
 #include "errors.h"
 #include "types.h"
-#include <iostream> // debug line
 #include <string>
 
 const std::vector<std::string> Commands = {"out", "decm", "decv", "add",
@@ -28,13 +28,12 @@ TokenGrid_t CreateLabeledTokenTable(const TokenGrid &TokenizedLines) {
                  "digit but was not given.");
       try {
         std::stoi(line.at(1));
+        token_struct.Type = "!!!"; // completed, can ignore
         token_struct.TokenName = "decm";
-        token_struct.Type = "cmd";
-        Labelledline.push_back(token_struct);
-        token_struct.TokenName = line.at(1);
-        token_struct.Type = "dig";
+        Labelledline.clear();
         Labelledline.push_back(token_struct);
         LabelledTokenTable.push_back(Labelledline);
+        DecmC(std::stoi(line.at(1)));
         continue;
       } catch (...) {
         OutError("Byte Code creation Failed -> decm takes 1 argument of type "
@@ -46,7 +45,6 @@ TokenGrid_t CreateLabeledTokenTable(const TokenGrid &TokenizedLines) {
       linecmd = line.at(0);
       Labelledline.push_back(token_struct);
     }
-    DeclarationLines.push(LineIndex);
     for (size_t TokenIndex = 1; TokenIndex < line.size(); TokenIndex++) {
       CurrentState.TokenIndex += 1;
       std::string tokenStr = line.at(TokenIndex);
@@ -92,6 +90,15 @@ TokenGrid_t CreateLabeledTokenTable(const TokenGrid &TokenizedLines) {
                  "command");
       }
       Labelledline.push_back(asiMetadata);
+    }
+    if (linecmd == "decv") {
+      CurrentState.TokenIndex = 0;
+      CurrentState.CurrentTokens = Labelledline;
+      DecvC(SliceStuff(1, Labelledline.size() - 1, Labelledline));
+      token_struct.Type = "!!!";
+      token_struct.TokenName = "decv";
+      Labelledline.clear();
+      Labelledline.push_back(token_struct);
     }
     LabelledTokenTable.push_back(Labelledline);
   }
