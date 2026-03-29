@@ -44,13 +44,13 @@ double BridgeFncRtr(const Line_t &Tokens) {
   // Increment TokenIndex to point past the command name
   CurrentState.TokenIndex += 1;
 
-  if (cmd == "add")
+  if (cmd == "add.")
     return AddC(args);
-  else if (cmd == "min")
+  else if (cmd == "min.")
     return MinC(args);
-  else if (cmd == "mult")
+  else if (cmd == "mult.")
     return MultC(args);
-  else if (cmd == "div")
+  else if (cmd == "div.")
     return DivC(args);
   else {
     OutError("Cannot use void commands inside other commands");
@@ -308,23 +308,36 @@ void OutF(const Line_t &Tokens) {
   for (size_t i = 0; i < Tokens.size(); i++) {
     CurrentState.TokenIndex += 1;
     token CurrentToken = Tokens.at(i);
-
+    std::string DataToPrint;
+    std::string extra = "";
     if (CurrentToken.Type == "str")
-      std::cout << SliceStuff(1, CurrentToken.TokenName.size() - 2,
-                              CurrentToken.TokenName);
+      DataToPrint = SliceStuff(1, CurrentToken.TokenName.size() - 2,
+                               CurrentToken.TokenName);
     else if (CurrentToken.Type == "dig" || CurrentToken.Type == "bol")
-      std::cout << CurrentToken.TokenName;
+      DataToPrint = CurrentToken.TokenName;
     else if (CurrentToken.Type == "var") {
       BundleData Variable = SearchVariables(CurrentToken.TokenName);
       if (Variable.dataType == "dig" || Variable.dataType == "bol") {
-        std::cout << Variable.data;
+        DataToPrint = Variable.data;
       } else {
         // slice Variable.data, not CurrentToken.TokenName
-        std::cout << SliceStuff(1, Variable.data.size() - 2, Variable.data);
+        DataToPrint = SliceStuff(1, Variable.data.size() - 2, Variable.data);
       }
-    } else if (CurrentToken.Type == "cmd") {
-      std::cout << BridgeFncRtr(SliceStuff(i, Tokens.size() - 1, Tokens));
-      return;
+    } else if (CurrentToken.Type == "cmd")
+      DataToPrint = BridgeFncRtr(SliceStuff(i, Tokens.size() - 1, Tokens));
+    else if (CurrentToken.Type == "mmd") {
+      for (const char mmd : CurrentToken.TokenName) {
+        switch (mmd) {
+        case '-':
+          break;
+        case 'n':
+          extra = "\n";
+          break;
+        default:
+          OutError("Garbage mid line command given for out command");
+        }
+      }
     }
+    std::cout << DataToPrint + extra;
   }
 }
