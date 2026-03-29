@@ -5,8 +5,8 @@
 #include "types.h"
 #include <string>
 
-const std::vector<std::string> Commands = {"out", "decm", "decv", "add",
-                                           "min", "div",  "mult", "set"};
+const std::vector<std::string> Commands = {
+    "out", "decm", "dec", "add.", "min.", "div.", "mult.", "set", "var."};
 
 TokenGrid_t CreateLabeledTokenTable(const TokenGrid &TokenizedLines) {
   TokenGrid_t LabelledTokenTable;
@@ -91,12 +91,12 @@ TokenGrid_t CreateLabeledTokenTable(const TokenGrid &TokenizedLines) {
       }
       Labelledline.push_back(asiMetadata);
     }
-    if (linecmd == "decv") {
+    if (linecmd == "dec") {
       CurrentState.TokenIndex = 0;
       CurrentState.CurrentTokens = Labelledline;
-      DecvC(SliceStuff(1, Labelledline.size() - 1, Labelledline));
+      HandleDecC(SliceStuff(1, Labelledline.size() - 1, Labelledline));
       token_struct.Type = "!!!";
-      token_struct.TokenName = "decv";
+      token_struct.TokenName = "dec";
       Labelledline.clear();
       Labelledline.push_back(token_struct);
     }

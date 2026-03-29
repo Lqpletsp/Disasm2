@@ -20,7 +20,7 @@ void ExecuteMainCode(const TokenGrid_t &labeledtoken) {
     CurrentState.CurrentTokens = labeledtoken.at(LineIndex);
 
     Line_t Line = labeledtoken.at(LineIndex);
-    if (Line.empty())
+    if (Line.empty() || Line.at(0).Type == "!!!")
       continue;
 
     std::string cmd = Line.at(0).TokenName;

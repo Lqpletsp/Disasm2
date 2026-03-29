@@ -1,9 +1,10 @@
 #include "declarators.h"
 #include "errors.h"
 #include "types.h"
-#include <iostream>
 void DecmC(const int &size);
 void DecvC(const Line_t &Tokens);
+
+void HandleDecC(const Line_t &Tokens);
 
 void DecmC(const int &size) {
   CurrentState.TokenIndex += 1;
@@ -96,4 +97,17 @@ void DecvC(const Line_t &Tokens) {
                "only takes data type(s) and variable name(s). ");
     }
   }
+}
+
+void HandleDecC(const Line_t &Tokens) {
+  CurrentState.TokenIndex += 1;
+  if (Tokens.at(0).Type != "cmd")
+    OutError("dec command must be followed by idenfier declarators (var., "
+             "fnc.,loop., label.) but none were found");
+  Line_t SlicedLine = SliceStuff(1, Tokens.size() - 1, Tokens);
+  if (Tokens.at(0).TokenName == "var.")
+    DecvC(SlicedLine);
+  else
+    OutError("dec command must be followed by idenfier declarators (var., "
+             "fnc., loop., label.) but none were found");
 }
