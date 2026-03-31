@@ -79,7 +79,7 @@ TokenGrid_t CreateLabeledTokenTable(const TokenGrid &TokenizedLines) {
             asi = true;
           } else
             OutError("Byte Code creation Failed -> Garbage token given-- Could "
-                     "not interpret");
+                     "not given.");
         }
       }
       Labelledline.push_back(token_struct);

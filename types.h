@@ -22,11 +22,18 @@ struct Variable {
   std::string type;
   std::vector<int> slots;
 };
+struct Function {
+  std::string name;
+  std::vector<Variable> parameters;
+  int FunctionStartLine;
+};
 
 inline std::vector<MemSlot> g_pool;
 inline std::stack<int> g_freeSlots;
 inline std::unordered_map<std::string, Variable> g_vars;
 inline bool g_memDeclared = false;
+inline std::unordered_map<std::string, Function> g_functions;
+inline std::stack<std::string> LoadedFunctions;
 
 using Line = std::vector<std::string>;
 using TokenGrid = std::vector<Line>;

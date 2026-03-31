@@ -99,14 +99,36 @@ void DecvC(const Line_t &Tokens) {
   }
 }
 
+void DecfC(const Line_t &Tokens) {
+  Function FuncitonDetails;
+  Variable ParameterVariable;
+  CurrentState.TokenIndex += 1;
+  if (Tokens.at(0).TokenName == "var")
+    FuncitonDetails.name = Tokens.at(0).TokenName;
+  else
+    OutError("Invalid name given for function during declaration");
+
+  for (size_t TokenIndex = 1; TokenIndex < Tokens.size(); TokenIndex++) {
+    CurrentState.TokenIndex += 1;
+    token CurrentToken = Tokens.at(TokenIndex);
+    if (CurrentToken.Type == "var")
+      ParameterVariable.name = CurrentToken.TokenName;
+    else
+      OutError("Paremeters given must be of idenfiers but was given of "
+               "different type.");
+  }
+}
+
 void HandleDecC(const Line_t &Tokens) {
   CurrentState.TokenIndex += 1;
   if (Tokens.at(0).Type != "cmd")
     OutError("dec command must be followed by idenfier declarators (var., "
              "fnc.,loop., label.) but none were found");
   Line_t SlicedLine = SliceStuff(1, Tokens.size() - 1, Tokens);
-  if (Tokens.at(0).TokenName == "var.")
+  if (Tokens.at(0).TokenName == ".var")
     DecvC(SlicedLine);
+  else if (Tokens.at(0).TokenName == ".fnc")
+    DecfC(SlicedLine);
   else
     OutError("dec command must be followed by idenfier declarators (var., "
              "fnc., loop., label.) but none were found");
