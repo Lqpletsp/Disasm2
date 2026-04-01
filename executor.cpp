@@ -1,5 +1,6 @@
 // executor
 #include "executor.h"
+#include "declarators.h"
 #include "errors.h"
 #include "types.h"
 #include <iostream>
@@ -32,6 +33,8 @@ void ExecuteMainCode(const TokenGrid_t &labeledtoken) {
       SetC(SlicedLine);
     else if (cmd == "inp")
       InpC(SlicedLine);
+    else if (cmd == "dec")
+      HandleDecC(SlicedLine);
   }
 }
 void InpC(const Line_t &Tokens) { return; }

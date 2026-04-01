@@ -5,7 +5,9 @@
 int main() {
   std::string Code = R"(
   decm 50;
-  dec var. -d Num; 
+  dec .var -d Num;
+  set 10: Num; 
+  out "Hello world" -n Num; 
     )";
 
   TokenGrid tokens = Tokenizer(Code);

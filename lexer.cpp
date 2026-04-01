@@ -85,21 +85,12 @@ TokenGrid_t CreateLabeledTokenTable(const TokenGrid &TokenizedLines) {
       Labelledline.push_back(token_struct);
     }
     if (asi) {
-      if (linecmd != "set") {
+      if (linecmd != "set")
         OutError("Byte Code creation Failed -> ':' can only be used by the set "
                  "command");
-      }
       Labelledline.push_back(asiMetadata);
     }
-    if (linecmd == "dec") {
-      CurrentState.TokenIndex = 0;
-      CurrentState.CurrentTokens = Labelledline;
-      HandleDecC(SliceStuff(1, Labelledline.size() - 1, Labelledline));
-      token_struct.Type = "!!!";
-      token_struct.TokenName = "dec";
-      Labelledline.clear();
-      Labelledline.push_back(token_struct);
-    }
+
     LabelledTokenTable.push_back(Labelledline);
   }
   return LabelledTokenTable;

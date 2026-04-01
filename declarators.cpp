@@ -103,17 +103,19 @@ void DecfC(const Line_t &Tokens) {
   Function FuncitonDetails;
   Variable ParameterVariable;
   CurrentState.TokenIndex += 1;
-  if (Tokens.at(0).TokenName == "var")
+  if (Tokens.at(0).TokenName == "var") {
     FuncitonDetails.name = Tokens.at(0).TokenName;
-  else
+    FuncitonDetails.name = CurrentState.CurrentLine;
+  } else
     OutError("Invalid name given for function during declaration");
 
   for (size_t TokenIndex = 1; TokenIndex < Tokens.size(); TokenIndex++) {
     CurrentState.TokenIndex += 1;
     token CurrentToken = Tokens.at(TokenIndex);
-    if (CurrentToken.Type == "var")
+    if (CurrentToken.Type == "var") {
       ParameterVariable.name = CurrentToken.TokenName;
-    else
+      FuncitonDetails.parameters.push_back(ParameterVariable);
+    } else
       OutError("Paremeters given must be of idenfiers but was given of "
                "different type.");
   }
