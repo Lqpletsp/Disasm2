@@ -5,8 +5,9 @@
 #include "types.h"
 #include <string>
 
-const std::vector<std::string> Commands = {
-    "out", "decm", "dec", ".add", ".min", ".div", ".mult", "set", ".var"};
+const std::vector<std::string> Commands = {"out",  "decm", "dec",   ".add",
+                                           ".min", ".div", ".mult", "set",
+                                           ".var", ".all", ".fnc",  "end"};
 
 TokenGrid_t CreateLabeledTokenTable(const TokenGrid &TokenizedLines) {
   TokenGrid_t LabelledTokenTable;

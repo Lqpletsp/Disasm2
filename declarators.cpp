@@ -102,23 +102,29 @@ void DecvC(const Line_t &Tokens) {
 void DecfC(const Line_t &Tokens) {
   Function FuncitonDetails;
   Variable ParameterVariable;
+  InsideFunction = true;
   CurrentState.TokenIndex += 1;
-  if (Tokens.at(0).TokenName == "var") {
-    FuncitonDetails.name = Tokens.at(0).TokenName;
-    FuncitonDetails.name = CurrentState.CurrentLine;
+  if (Tokens.at(0).Type == "var") {
+    if (!InsideFunction) {
+      FuncitonDetails.name = Tokens.at(0).TokenName;
+      FuncitonDetails.FunctionStartLine = CurrentState.CurrentLine;
+      g_functions[Tokens.at(0).TokenName] = FuncitonDetails;
+      LoadedFunctions.push(FuncitonDetails.name);
+      for (size_t TokenIndex = 1; TokenIndex < Tokens.size(); TokenIndex++) {
+        token param = Tokens.at(TokenIndex);
+        Variable NewVar;
+        if (param.Type != "var")
+          OutError(
+              "Function declaration only allows identifiers as parameters");
+        NewVar.type = "uni"; // unidentified
+        NewVar.name = param.TokenName;
+        // slots is also not determined
+        FuncitonDetails.Parameters.push_back(NewVar);
+      }
+    } else
+      LoadedFunctions.push(Tokens.at(0).TokenName);
   } else
     OutError("Invalid name given for function during declaration");
-
-  for (size_t TokenIndex = 1; TokenIndex < Tokens.size(); TokenIndex++) {
-    CurrentState.TokenIndex += 1;
-    token CurrentToken = Tokens.at(TokenIndex);
-    if (CurrentToken.Type == "var") {
-      ParameterVariable.name = CurrentToken.TokenName;
-      FuncitonDetails.parameters.push_back(ParameterVariable);
-    } else
-      OutError("Paremeters given must be of idenfiers but was given of "
-               "different type.");
-  }
 }
 
 void HandleDecC(const Line_t &Tokens) {
@@ -127,7 +133,7 @@ void HandleDecC(const Line_t &Tokens) {
     OutError("dec command must be followed by idenfier declarators (var., "
              "fnc.,loop., label.) but none were found");
   Line_t SlicedLine = SliceStuff(1, Tokens.size() - 1, Tokens);
-  if (Tokens.at(0).TokenName == ".var")
+  if (Tokens.at(0).TokenName == ".var" && !InsideFunction)
     DecvC(SlicedLine);
   else if (Tokens.at(0).TokenName == ".fnc")
     DecfC(SlicedLine);

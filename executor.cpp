@@ -13,7 +13,14 @@ double DivC(const Line_t &Tokens);
 void OutF(const Line_t &Tokens);
 void SetC(const Line_t &Tokens);
 void InpC(const Line_t &Tokens);
+void EndC(const Line_t &Tokens);
+std::string CallFNC(const Line_t &Tokens);
 
+Function SearchFunctions(const std::string &name) {
+  if (!g_functions.count(name))
+    OutError("Undeclared function,'" + name + "', called");
+  return g_functions[name];
+}
 void ExecuteMainCode(const TokenGrid_t &labeledtoken) {
   for (size_t LineIndex = 0; LineIndex < labeledtoken.size(); LineIndex++) {
     CurrentState.CurrentLine = LineIndex;
@@ -23,21 +30,42 @@ void ExecuteMainCode(const TokenGrid_t &labeledtoken) {
     Line_t Line = labeledtoken.at(LineIndex);
     if (Line.empty() || Line.at(0).Type == "!!!")
       continue;
-
     std::string cmd = Line.at(0).TokenName;
     Line_t SlicedLine = SliceStuff(1, Line.size() - 1, Line);
 
-    if (cmd == "out")
+    if (cmd == "end")
+      EndC(SlicedLine);
+    else if (cmd == "dec")
+      HandleDecC(SlicedLine);
+
+    if (InsideFunction)
+      continue;
+    else if (cmd == "out")
       OutF(SlicedLine);
     else if (cmd == "set")
       SetC(SlicedLine);
     else if (cmd == "inp")
       InpC(SlicedLine);
-    else if (cmd == "dec")
-      HandleDecC(SlicedLine);
   }
 }
 void InpC(const Line_t &Tokens) { return; }
+void EndC(const Line_t &Tokens) {
+  CurrentState.TokenIndex += 1;
+  token CurrentToken = Tokens.at(0);
+  if (CurrentToken.Type != "cmd")
+    OutError("The second token of line with end command must be another "
+             "command but was not found");
+
+  if (CurrentToken.TokenName == ".all" && !InsideFunction)
+    exit(0);
+  else if (CurrentToken.TokenName == ".fnc")
+    if (LoadedFunctions.size() == 0)
+      OutError("Function tried to end but no function found");
+  LoadedFunctions.pop();
+  if (LoadedFunctions.size() == 0) {
+    InsideFunction = false;
+  }
+}
 
 double BridgeFncRtr(const Line_t &Tokens) {
   // Tokens[0] is the command name, rest are its arguments

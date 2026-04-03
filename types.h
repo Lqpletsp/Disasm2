@@ -24,8 +24,8 @@ struct Variable {
 };
 struct Function {
   std::string name;
-  std::vector<Variable> parameters;
-  int FunctionStartLine;
+  std::vector<Variable> Parameters;
+  size_t FunctionStartLine;
 };
 
 inline std::vector<MemSlot> g_pool;
@@ -34,7 +34,7 @@ inline std::unordered_map<std::string, Variable> g_vars;
 inline bool g_memDeclared = false;
 inline std::unordered_map<std::string, Function> g_functions;
 inline std::stack<std::string> LoadedFunctions;
-
+inline bool InsideFunction = false;
 using Line = std::vector<std::string>;
 using TokenGrid = std::vector<Line>;
 using Line_t = std::vector<token>;
